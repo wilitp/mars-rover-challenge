@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useMemo } from "react";
 import InputLabel from "@mui/material/InputLabel";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -59,19 +59,26 @@ const Cockpit: FC<CockpitProps> = ({
   handleRoverChange,
   handleCameraChange,
 }) => {
+  // ---- Bookmarks logic -------------------------
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
-  const noBookmarks = Object.keys(bookmarks).length === 0;
+  const noBookmarks = useMemo(() => Object.keys(bookmarks).length === 0, [
+    bookmarks,
+  ]);
 
+  // Open Bookmarks
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (noBookmarks) return;
     setAnchorEl(event.currentTarget);
   };
+
+  // Close Bookmarks
   const handleClose = () => {
     setAnchorEl(null);
   };
 
+  // Delete a Bookmark
   const handleBookmarkDeletion = (b: string) => (
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -82,6 +89,7 @@ const Cockpit: FC<CockpitProps> = ({
 
   return (
     <Box marginTop={3} marginBottom={3}>
+      {/* Sol switch */}
       <Box marginBottom={1}>
         <FormControlLabel
           control={
@@ -95,6 +103,8 @@ const Cockpit: FC<CockpitProps> = ({
           label="Use Sol"
         />
       </Box>
+
+      {/* Date / sol selection */}
       <Box marginBottom={1}>
         <TextField
           value={date}
@@ -114,6 +124,8 @@ const Cockpit: FC<CockpitProps> = ({
           disabled={!useSol}
         />
       </Box>
+
+      {/* Rover and camera selection */}
       <Box marginBottom={1}>
         <FormControl>
           <InputLabel id="camera-select-label">Rover</InputLabel>
@@ -149,6 +161,7 @@ const Cockpit: FC<CockpitProps> = ({
           </Select>
         </FormControl>
 
+        {/* Bookmarks */}
         {noBookmarks ? null : (
           <div>
             <Button
@@ -190,6 +203,8 @@ const Cockpit: FC<CockpitProps> = ({
           </div>
         )}
       </Box>
+
+      {/* Add bookmark */}
       <Box>
         <Button onClick={addBookmark as any} variant="contained">
           Bookmark current
