@@ -20,6 +20,8 @@ import {
   Bookmark,
 } from "./bookmarks";
 
+import { Photo } from "./types";
+
 function App() {
   // Bookmarks' state
   const [bookmarks, setBookmarks] = useState<Bookmarks>({});
@@ -29,13 +31,15 @@ function App() {
   const [date, setDate] = useState<string>(
     new Date().toISOString().slice(0, 10)
   );
-  const [sol, setSol] = useState<string>("1");
-  const [useSol, setUseSol] = useState<boolean>(false);
-  const [page, setPage] = useState<number>(1);
+  const [sol, setSol] = useState<string>("1000");
+  const [useSol, setUseSol] = useState<boolean>(true);
   const [rover, setRover] = useState<string>("curiosity");
 
+  // Last page reached
+  const page = useRef<number>(1);
+
   // Photos' state
-  const [photos, setPhotos] = useState<{ img_src: string }[] | null>(null);
+  const [photos, setPhotos] = useState<Photo[] | null>(null);
 
   // Did we reach the bottom?
   const [bottomed, setBottomed] = useState<boolean>(false);
@@ -47,18 +51,10 @@ function App() {
     setBookmarks(getBookmarks());
   }, []);
 
-  // Is it the first render?
-  const firstRender = useRef(true);
-  // Fetch more photos on page change
-  useEffect(() => {
-    // Won't run on the first render
-    // debugger;
-    if (firstRender.current) {
-      firstRender.current = false;
-      return;
-    }
+  const handleLoadMore = () => {
+    page.current += 1;
     setIsFetching(true);
-    roverPhotos(page, camera, rover, undefined, sol).then((data) => {
+    const cb = (data: Photo[]) => {
       if (!photos) {
         setPhotos(data);
         return;
@@ -69,23 +65,28 @@ function App() {
         return;
       }
       const newPhotos = photos.concat(data);
-      console.log(newPhotos.length);
       setPhotos(newPhotos);
       setIsFetching(false);
-    });
-  }, [page]);
+    };
+
+    if (useSol) {
+      roverPhotos(page.current, camera, rover, undefined, sol).then(cb);
+    } else {
+      roverPhotos(page.current, camera, rover, date, undefined).then(cb);
+    }
+  };
 
   // Fetch and display on new selection
   useEffect(() => {
     setIsFetching(true);
     setBottomed(false);
     if (useSol) {
-      roverPhotos(page, camera, rover, undefined, sol).then((data) => {
+      roverPhotos(page.current, camera, rover, undefined, sol).then((data) => {
         setPhotos(data);
         setIsFetching(false);
       });
     } else {
-      roverPhotos(page, camera, rover, date).then((data) => {
+      roverPhotos(page.current, camera, rover, date).then((data) => {
         setPhotos(data);
         setIsFetching(false);
       });
@@ -95,7 +96,13 @@ function App() {
   const images = useMemo(() => {
     if (!photos) return;
     return photos.map((p) => (
-      <img style={{ display: "block" }} key={p.img_src} src={p.img_src}></img>
+      <img
+        loading="lazy"
+        alt={`${p.rover.name} - ${p.camera.name}, ${p.earth_date}`}
+        style={{ display: "block" }}
+        key={p.img_src}
+        src={p.img_src}
+      ></img>
     ));
   }, [photos]);
 
@@ -179,7 +186,7 @@ function App() {
           {images as any}
 
           {!bottomed ? (
-            <Button variant="text" onClick={() => setPage(page + 1)}>
+            <Button variant="text" onClick={handleLoadMore}>
               Load More
             </Button>
           ) : null}
